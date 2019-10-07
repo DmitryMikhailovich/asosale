@@ -1,0 +1,8 @@
+{
+  "STORAGE_PATH": "./storage.db",
+  "SQL_SCRIPTS_PATH": "./sql",
+  "TEMPLATES_PATH": "./templates",
+  "BOT_TOKEN_PATH": "./tkn",
+  "ADMIN_BOT_TOKEN_PATH": "./admin_tkn",
+  "ADMIN_CHAT_ID": -1
+}
