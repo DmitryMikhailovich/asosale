@@ -88,6 +88,7 @@ INSERT INTO updated_prices
     , currency
     , current_price
     , previous_price
+    , only_lastmod
 )
 SELECT
       new_prices.product_id
@@ -95,6 +96,11 @@ SELECT
     , new_prices.currency
     , new_prices.current_price
     , new_prices.previous_price
+    , CASE WHEN new_prices.current_price = coalesce(stored_prices.current_price, -123)
+            AND new_prices.previous_price = coalesce(stored_prices.previous_price, -123)
+           THEN 1
+           ELSE 0
+      END AS only_lastmod
 FROM (
     SELECT
           product_id
@@ -114,13 +120,10 @@ LEFT JOIN
         , previous_price
         , row_number() OVER (PARTITION BY product_id, currency ORDER BY lastmod DESC) AS rn
     FROM prices
-
 ) stored_prices ON new_prices.product_id = stored_prices.product_id
                AND new_prices.currency = stored_prices.currency
                AND new_prices.rn=1
                AND stored_prices.rn=1
-WHERE new_prices.current_price <> coalesce(stored_prices.current_price, -123)
-   OR new_prices.previous_price <> coalesce(stored_prices.previous_price, -123)
 ;
 
 INSERT INTO prices
@@ -138,6 +141,17 @@ SELECT
     , current_price
     , previous_price
 FROM updated_prices;
+
+DELETE FROM prices
+WHERE price_id IN (
+    SELECT sp.price_id
+    FROM stale_prices sp
+    INNER JOIN updated_prices up ON up.product_id = sp.product_id
+                                AND up.currency = sp.currency
+                                AND up.current_price = sp.current_price
+                                AND up.previous_price = sp.previous_price
+)
+;
 
 INSERT INTO new_sales
 (
@@ -166,5 +180,6 @@ SELECT
 FROM updated_prices up
 INNER JOIN products p ON p.id = up.product_id
 INNER JOIN brands b ON b.id = p.brand_id
-WHERE up.current_price < up.previous_price
+WHERE up.only_lastmod = 0
+AND up.current_price < up.previous_price
 AND up.product_id IN (SELECT product_id FROM prices GROUP BY product_id HAVING COUNT(*)>1);

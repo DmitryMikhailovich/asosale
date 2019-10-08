@@ -1,14 +1,14 @@
-import sys
 import re
+import math
 import requests
 import time
-import traceback
 import datetime as dt
 from lxml import etree
 from converters import parse_ts
 from config import Config
 from sqlite_storage import SqliteStorage
 from asos_product import AsosProduct
+from asos_price import AsosPrice
 from logger import log_exception, log_message
 
 PRODUCT_IDS = 'productIds'
@@ -94,6 +94,22 @@ def get_stockprice_obj(product_ids):
     return r.json()
 
 
+def crawl_over_prices(storage, lastmod):
+    ids_of_products_with_stale_prices = storage.get_ids_of_products_with_stale_prices()
+    batch_size = 50
+    for i in range(0, math.ceil(len(ids_of_products_with_stale_prices) / batch_size)):
+        try:
+            batch_with_product_ids = ids_of_products_with_stale_prices[i * batch_size:(i + 1) * batch_size]
+            stockprice_objs = get_stockprice_obj(batch_with_product_ids)
+            if not stockprice_objs:
+                continue
+            asos_prices = [AsosPrice.from_stockprice_obj(lastmod, so) for so in stockprice_objs]
+            storage.stage_prices(asos_prices)
+            time.sleep(0.25)
+        except requests.ConnectionError:
+            log_exception()
+
+
 def crawl(storage):
     start_dtm = dt.datetime.now().astimezone(dt.timezone.utc)
     last_process_status = storage.get_last_process_status()
@@ -120,6 +136,8 @@ def crawl(storage):
     products_lastmod = storage.get_products_lastmod()
 
     try:
+        crawl_over_prices(storage, start_dtm)
+
         sitemap_urls = parse_root_sitemap(ROOT_SITEMAP_URL)
         for sitemap_url in sitemap_urls:
             for url, product_id, lastmod in get_product_urls_from_sitemap(sitemap_url, products_lastmod):
@@ -131,7 +149,7 @@ def crawl(storage):
                     storage.stage_product(asos_product)
                     process_status.cnt += 1
                     time.sleep(0.25)
-                except Exception as e:
+                except requests.ConnectionError as e:
                     log_exception()
         storage.load_stage_into_storage()
         process_status.end_dtm = dt.datetime.now().astimezone(dt.timezone.utc)
@@ -142,9 +160,9 @@ def crawl(storage):
     finally:
         storage.update_process_status(process_status)
         storage.close()
-        msg = 'Process {} finished with status *{}* on {}. Count: {}'.format(process_status.process_id,
+        msg = 'Process {} finished with status *{}* on {}. Updated products: {}'.format(process_status.process_id,
                                                                   process_status.status,
-                                                                  dt.datetime.now().astimezone(),
+                                                                  dt.datetime.now().astimezone(dt.timezone.utc),
                                                                   process_status.cnt)
         log_message(msg)
 

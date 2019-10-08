@@ -11,6 +11,9 @@ class AbstractStorage:
     def update_process_status(self, process_status):
         raise NotImplementedError
 
+    def get_ids_of_products_with_stale_prices(self):
+        raise NotImplementedError
+
     def get_products_lastmod(self):
         raise NotImplementedError
 
@@ -24,6 +27,9 @@ class AbstractStorage:
         raise NotImplementedError
 
     def stage_price(self, asos_price):
+        raise NotImplementedError
+
+    def stage_prices(self, asos_prices):
         raise NotImplementedError
 
     def load_stage_into_storage(self):

@@ -76,6 +76,13 @@ class SqliteStorage(AbstractStorage):
         self.db.executescript(sql)
         self.db.commit()
 
+    def get_ids_of_products_with_stale_prices(self):
+        pop_sql = self.get_script_text('populate_stale_prices')
+        self.db.executescript(pop_sql)
+        self.db.commit()
+        sel_sql = self.get_script_text('select_ids_of_products_with_stale_prices')
+        return [row[0] for row in self.db.execute(sel_sql).fetchall()]
+
     def get_stg_product_ids(self):
         # TODO: wrap in script
         rows = self.db.execute('select id from products_stg').fetchall()
@@ -97,6 +104,10 @@ class SqliteStorage(AbstractStorage):
 
     def stage_price(self, asos_price):
         self.db.execute(self.sql_stage_price, asos_price.get_price_json())
+        self.db.commit()
+
+    def stage_prices(self, asos_prices):
+        self.db.executemany(self.sql_stage_price, [ap.get_price_json() for ap in asos_prices])
         self.db.commit()
 
     def load_stage_into_storage(self):

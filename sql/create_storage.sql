@@ -114,6 +114,20 @@ CREATE TABLE updated_prices
     , currency TEXT
     , current_price REAL
     , previous_price REAL
+    , only_lastmod INTEGER
+)
+;
+
+DROP TABLE IF EXISTS stale_prices;
+
+CREATE TABLE stale_prices
+(
+      price_id INTEGER PRIMARY KEY
+    , product_id INTEGER
+    , lastmod DATETIME
+    , currency TEXT
+    , current_price REAL
+    , previous_price REAL
 )
 ;
 
