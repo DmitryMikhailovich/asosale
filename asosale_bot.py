@@ -69,14 +69,19 @@ class AsosaleBot(BaseBot):
         chat_ids = self.chat_ids.copy()
         random_chat_id = chat_ids.pop()
         for row in new_sales:
+            current_price = row['current_price']
+            previous_price = row['previous_price']
+            currency = row['currency']
+            discount = (current_price-previous_price)/previous_price if previous_price != 0 else 0.0
             caption = self.TMPL_NOTIF_CAPTION.format(brand_name=row['brand_name'],
                                                      gender=row['gender'],
                                                      name=row['name'],
                                                      url=row['url'],
-                                                     current_price=round(row['current_price']),
-                                                     previous_price=strike(round(row['previous_price'])),
-                                                     currency=row['currency'],
-                                                     currency_strike=strike(row['currency']))
+                                                     current_price=round(current_price),
+                                                     previous_price=strike(round(previous_price)),
+                                                     currency=currency,
+                                                     currency_strike=strike(currency),
+                                                     discount=discount)
             img_url = row['img_url']
             if img_url:
                 try:
