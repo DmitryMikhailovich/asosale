@@ -22,12 +22,14 @@ class BaseBot:
         r = self.session.post(url=url, json=body)
         return r.json()
 
-    def send_message(self, chat_id, text, parse_mode=None):
+    def send_message(self, chat_id, text, parse_mode=None, disable_web_page_preview=None):
         url = URL_SEND_MESSAGE.format(token=self.token)
         body = {'chat_id': chat_id,
                 'text': text}
         if parse_mode:
             body['parse_mode'] = parse_mode
+        if disable_web_page_preview is not None:
+            body['disable_web_page_preview'] = bool(disable_web_page_preview)
         r = self.session.post(url=url, json=body)
         return r.json()
 
