@@ -78,6 +78,38 @@ SELECT
     , web_category_id
 FROM product_web_categories_stg;
 
+INSERT OR REPLACE INTO web_categories
+(
+      id
+    , lastmod
+    , parent_id
+    , name
+    , type
+    , url
+    , product_path
+)
+SELECT
+      id
+    , lastmod
+    , parent_id
+    , name
+    , type
+    , url
+    , product_path
+FROM (
+    SELECT
+          id
+        , lastmod
+        , parent_id
+        , name
+        , type
+        , url
+        , product_path
+        , row_number () OVER(PARTITION BY id ORDER BY lastmod DESC) AS rn
+    FROM web_categories_stg
+)
+WHERE rn=1;
+
 
 DELETE FROM updated_prices;
 

@@ -21,6 +21,7 @@ class SqliteStorage(AbstractStorage):
         self.sql_stage_product_alt_names = self.get_script_text('insert_product_alt_names_stg')
         self.sql_stage_product_web_categories = self.get_script_text('insert_product_web_categories_stg')
         self.sql_stage_price = self.get_script_text('insert_prices_stg')
+        self.sql_stage_web_categories = self.get_script_text('insert_web_categories_stg')
 
     def get_script_text(self, script_name):
         if not script_name.endswith('.sql'):
@@ -109,6 +110,16 @@ class SqliteStorage(AbstractStorage):
     def stage_prices(self, asos_prices):
         self.db.executemany(self.sql_stage_price, [ap.get_price_json() for ap in asos_prices])
         self.db.commit()
+
+    def stage_web_categories(self, asos_web_categories):
+        self.db.executemany(self.sql_stage_web_categories,
+                            [wc.get_web_category_json() for wc in asos_web_categories])
+        self.db.commit()
+
+    def need_to_update_web_categories(self):
+        sql = self.get_script_text('select_need_to_update_web_categories')
+        need_to_update = self.db.execute(sql).fetchone()[0]
+        return need_to_update
 
     def load_stage_into_storage(self):
         sql = self.get_script_text('load_to_storage')

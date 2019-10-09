@@ -32,6 +32,12 @@ class AbstractStorage:
     def stage_prices(self, asos_prices):
         raise NotImplementedError
 
+    def stage_web_categories(self, asos_web_categories):
+        raise NotImplementedError
+
+    def need_to_update_web_categories(self):
+        raise NotImplementedError
+
     def load_stage_into_storage(self):
         raise NotImplementedError
 

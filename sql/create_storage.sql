@@ -38,6 +38,32 @@ CREATE TABLE brands
 )
 ;
 
+DROP TABLE IF EXISTS web_categories;
+
+CREATE TABLE web_categories
+(
+    id INTEGER PRIMARY KEY
+    , lastmod INTEGER
+    , parent_id INTEGER
+    , name TEXT
+    , type TEXT
+    , url TEXT
+    , product_path TEXT
+);
+
+DROP TABLE IF EXISTS web_categories_stg;
+
+CREATE TABLE web_categories_stg
+(
+    id INTEGER
+    , lastmod INTEGER
+    , parent_id INTEGER
+    , name TEXT
+    , type TEXT
+    , url TEXT
+    , product_path TEXT
+);
+
 
 DROP TABLE IF EXISTS product_alt_names;
 

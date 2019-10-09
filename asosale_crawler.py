@@ -9,6 +9,7 @@ from config import Config
 from sqlite_storage import SqliteStorage
 from asos_product import AsosProduct
 from asos_price import AsosPrice
+from asos_web_category import AsosWebCategory
 from logger import log_exception, log_message
 
 PRODUCT_IDS = 'productIds'
@@ -18,9 +19,13 @@ SITEMAP_NS = {'xmlns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
 
 ROOT_SITEMAP_URL = 'https://www.asos.com/ru/product-sitemap-index-RU.xml'
 
+ROOT_CATEGORY_IDS = [111, 1000, 1001]
+
 STOCKPRICE_URL = 'https://www.asos.com/api/product/catalogue/v3/stockprice'
 
 PRODUCTS_URL = 'https://www.asos.com/api/product/catalogue/v3/products/{pid}'
+
+CATEGORIES_URL = 'https://www.asos.com/api/product/category/v1/categories/{cid}'
 
 HEADERS = {
     "asos-c-name": "asos-web-productpage",
@@ -35,6 +40,11 @@ STOCKPRICE_BASE_PARAMS = {
 
 PRODUCT_BASE_PARAMS = {
     "store": "RU"
+}
+
+CATEGORY_BASE_PARAMS = {
+    'Country': 'RU',
+    'Lang': 'ru-RU'
 }
 
 PAT_PRD_URL = re.compile(r'\/prd\/(?P<product_id>\d+)$', re.I)
@@ -94,6 +104,22 @@ def get_stockprice_obj(product_ids):
     return r.json()
 
 
+def get_web_categories_obj(cid):
+    url = CATEGORIES_URL.format(cid=cid)
+    r = get(url, headers=HEADERS, params=CATEGORY_BASE_PARAMS, exc_msg='Failed to get web categories for CID='+str(cid))
+    return r.json()
+
+
+def crawl_over_web_categories(storage, lastmod):
+    for root_cid in ROOT_CATEGORY_IDS:
+        try:
+            web_categories_obj = get_web_categories_obj(root_cid)
+            asos_web_categories = AsosWebCategory.from_root_web_category_obj(web_categories_obj['categories'], None, lastmod)
+            storage.stage_web_categories(asos_web_categories)
+        except requests.ConnectionError:
+            log_exception()
+
+
 def crawl_over_prices(storage, lastmod):
     ids_of_products_with_stale_prices = storage.get_ids_of_products_with_stale_prices()
     batch_size = 50
@@ -133,11 +159,14 @@ def crawl(storage):
                                                                            start_dtm,
                                                                            last_process_status.status if last_process_status else 'NOT EXISTED')
     log_message(msg)
-    products_lastmod = storage.get_products_lastmod()
 
     try:
+        if storage.need_to_update_web_categories():
+            crawl_over_web_categories(storage, start_dtm)
+
         crawl_over_prices(storage, start_dtm)
 
+        products_lastmod = storage.get_products_lastmod()
         sitemap_urls = parse_root_sitemap(ROOT_SITEMAP_URL)
         for sitemap_url in sitemap_urls:
             for url, product_id, lastmod in get_product_urls_from_sitemap(sitemap_url, products_lastmod):
