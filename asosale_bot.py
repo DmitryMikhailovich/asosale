@@ -89,6 +89,8 @@ class AsosaleBot(BaseBot):
                     log_message('Failed to download image {}'.format(row['img_url']))
                     log_exception()
                     img_url = None
+            else:
+                self.send_message(random_chat_id, caption, parse_mode='Markdown')
             for chat_id in chat_ids:
                 if img_url:
                     self.send_photo(chat_id, img_url, caption, parse_mode='Markdown')
