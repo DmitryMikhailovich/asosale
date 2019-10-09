@@ -95,12 +95,12 @@ class AsosaleBot(BaseBot):
                     log_exception()
                     img_url = None
             else:
-                self.send_message(random_chat_id, caption, parse_mode='Markdown')
+                self.send_message(random_chat_id, caption, parse_mode='Markdown', disable_web_page_preview=True)
             for chat_id in chat_ids:
                 if img_url:
                     self.send_photo(chat_id, img_url, caption, parse_mode='Markdown')
                 else:
-                    self.send_message(chat_id, caption, parse_mode='Markdown')
+                    self.send_message(chat_id, caption, parse_mode='Markdown', disable_web_page_preview=True)
         self.last_sale_id = new_last_sale_id
 
     def add_new_chat(self, chat_obj):
