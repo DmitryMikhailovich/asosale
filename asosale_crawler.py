@@ -149,6 +149,7 @@ def crawl(storage):
         stg_product_ids = set()
         process_status = storage.log_new_process(start_dtm=start_dtm)
         storage.truncate_stage()
+        storage.populate_stale_prices()
     if last_process_status and last_process_status.is_error():
         last_run_failed = True
         stg_product_ids = storage.get_stg_product_ids()
@@ -180,6 +181,21 @@ def crawl(storage):
                     time.sleep(0.25)
                 except requests.ConnectionError as e:
                     log_exception()
+        #remove this when all img_urls are filled
+        for url, product_id, lastmod in storage.db.execute('select url, id, lastmod from products where img_url is null and id in (select product_id from prices_stg) limit 300').fetchall():
+            try:
+                if last_run_failed and product_id in stg_product_ids:
+                    continue
+                
+                product_obj = get_product_obj(product_id)
+                asos_product = AsosProduct(url, lastmod, product_obj)
+                storage.db.execute(storage.sql_stage_product, asos_product.get_product_stg_json())
+                process_status.cnt += 1
+                time.sleep(0.25)
+            except requests.ConnectionError as e:
+                log_exception()
+        storage.db.commit()
+        #block finish
         storage.load_stage_into_storage()
         process_status.end_dtm = dt.datetime.now().astimezone(dt.timezone.utc)
         process_status.set_succeeded()

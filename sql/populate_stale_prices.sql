@@ -29,5 +29,5 @@ FROM (
 ) p
 WHERE p.rn = 1
 ORDER BY p.lastmod ASC
-LIMIT 4000
+LIMIT 2000
 ;

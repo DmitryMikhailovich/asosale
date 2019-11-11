@@ -77,10 +77,12 @@ class SqliteStorage(AbstractStorage):
         self.db.executescript(sql)
         self.db.commit()
 
-    def get_ids_of_products_with_stale_prices(self):
+    def populate_stale_prices(self):
         pop_sql = self.get_script_text('populate_stale_prices')
         self.db.executescript(pop_sql)
         self.db.commit()
+
+    def get_ids_of_products_with_stale_prices(self):
         sel_sql = self.get_script_text('select_ids_of_products_with_stale_prices')
         return [row[0] for row in self.db.execute(sel_sql).fetchall()]
 
