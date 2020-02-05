@@ -2,7 +2,7 @@ import sys
 import signal
 import datetime as dt
 import time
-from base_bot import BaseBot
+from tg_base_bot import BaseBot
 from config import Config
 from sqlite_storage import SqliteStorage
 from converters import strike
